@@ -79,4 +79,24 @@ Database can be restored using Azure Backup.
 
 | Environment | Runtime | Region | OS | Plan | Public Access | App Insights |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Production | Python 3.9 | North Europe | Linux | Serverless | No | Yes |
+
+Azure function will be used to maintain script for deleting all blog posts at once.
+
+```
+function test() {
+  console.log("notice the blank line before this function?");
+}
+```
+
+
+
+
+
+
+
+
+
+
+
 
