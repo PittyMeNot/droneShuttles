@@ -28,7 +28,7 @@ DroneShuttlesApp will be hosted as cloud native web application, leveraging mana
 - Azure Application Gateway with WAF v2
 - Container registry
 - Network Security groups
-- Virtual networks
+- Virtual networks with subnets
 - Azure DevOps with pipelines
 - Application Insights
 - Log analytics workspaces
@@ -164,9 +164,52 @@ NSG will be applied to 2 vNets (North europe and West Europe) to accept internal
 
 ### 3.9.1 Virtual Networks
 
-There will be two Virtual Networks. One will be hosted in North europe, and the Second one in West Europe. Both of them will have 5 subnets
+There will be two Virtual Networks. One will be hosted in North europe, and the Second one in West Europe. Both of them will have 5 subnets and integrated with specific Azure Resources.
 
 | Environment | Address Space | Address Range | Address count | Subnets | Peerings |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | Production | 10.0.0.0/24 | 10.0.0.0 - 10.0.0.255 | 256 | 5 | Yes, to vNet 2 |
 | Production | 172.16.0.0/24 | 172.16.0.0 - 172.16.0.255 | 256 | 5 | Yes, to vNet 1 |
+
+### 3.9.2 Subnets
+
+| Name | Address Space | Address Range | Address count | Delegated to |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| sbn101 | 10.0.0.0/27 | 10.0.0.0 - 10.0.0.31 | 27 + 5 Azure Reserved addresses | Microsoft.DBforMySQL/flexibleServers |
+| sbn102 | 10.0.0.32/27 | 10.0.0.32 - 10.0.0.63 | 27 + 5 Azure Reserved addresses | Microsoft.Web/serverfarms |
+| sbn103 | 10.0.0.64/27 | 10.0.0.64 - 10.0.0.95 | 27 + 5 Azure Reserved addresses | N/A |
+| sbn104 | 10.0.0.96/27 | 10.0.0.96 - 10.0.0.127 | 27 + 5 Azure Reserved addresses | N/A |
+| sbn105 | 10.0.0.128/27 | 10.0.0.128 - 10.0.0.159 | 27 + 5 Azure Reserved addresses | N/A |
+| sbn201 | 172.16.0.0/27 | 172.16.0.0 - 172.16.0.31 | 27 + 5 Azure Reserved addresses | Microsoft.DBforMySQL/flexibleServers |
+| sbn202 | 172.16.0.32/27 | 172.16.0.32 - 172.16.0.63 | 27 + 5 Azure Reserved addresses | Microsoft.Web/serverfarms |
+| sbn203 | 172.16.0.64/27 | 172.16.0.64 - 172.16.0.95 | 27 + 5 Azure Reserved addresses | N/A |
+| sbn204 | 172.16.0.96/27 | 172.16.0.96 - 172.16.0.127 | 27 + 5 Azure Reserved addresses | N/A |
+| sbn205 | 172.16.0.128/27 | 172.16.0.128 - 172.16.0.159 | 27 + 5 Azure Reserved addresses | N/A |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
