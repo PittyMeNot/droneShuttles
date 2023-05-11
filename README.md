@@ -4,7 +4,10 @@ This application can be accessed here: https://droneshuttles.azurefd.net - It's 
 template.json has every needed service which needs to be deployed. I've configured it to have public access everywhere just for code review (In reality, this will be configured to use private endpoints)
 Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services
 
+Sometimes, container doesn't want to start itself. I don't know why, errors are generic but usually it will start after reboot. 
+Image used: bitnami/ghost:latest
 
+I've used bitnami since standard ghost image didn't want to work in my environment.
 
 
 # DroneShuttlesApp documentation
