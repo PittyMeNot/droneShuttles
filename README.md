@@ -146,3 +146,26 @@ As a backend, application gateway will be hosted to accept HTTPS protocol and fo
 | Environment  | Pricing Plan | App Insights | Region | FrontEnd IP | Autoscaling min. | Autoscaling default | Autoscaling max | 
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | Production  | WAF V2   | Yes | North europe | Public IP | 1 | 1 | 3 |
+
+Application gateway will distribute incomming trafic between two regions, North Europe and West europe. Application gateway will use two app services as a backend pool and will be accepting HTTPS protocol.
+Health probes will be configured to monitor app services every 30 seconds to avoid generating too much costs.
+
+### 3.7.1 Azure Container Registry
+
+| Environment  | Pricing Plan | Backup | Region |
+| ------------- | ------------- | ------------- | ------------- |
+| Production and Development | Premium | ZRS | North Europe |
+
+Container Registry will be used to provide CI/CD from Azure DevOps to App Services. Containers will be stored in the private repository ( Prod and dev ).
+
+### 3.8.1 Network security groups
+
+NSG will be applied to 2 vNets (North europe and West Europe) to accept internal traffic (Standard Azure rules) and HTTPS from Application Gateway.
+
+### 3.9.1 Virtual Networks
+
+There will be two Virtual Networks. One will be hosted in North europe, and the Second one in West Europe. Both of them will have 5 subnets
+
+| Environment | Address Space | Address Range | Address count | Subnets | Peerings |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Production | 10.0.0.0/24 | 10.0.0.0 - 10.0.0.255 | 256 | 5 | Yes, to vNet 2 |
