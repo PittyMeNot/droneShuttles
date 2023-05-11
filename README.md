@@ -33,3 +33,9 @@ DroneShuttlesApp will be hosted as cloud native web application, leveraging mana
 - Application Insights
 - Log analytics workspaces
 
+### 3.1 App Service
+
+| Environment  | Pricing Plan | App Insights | Region | Operating System | Autoscaling min. | Autoscaling default | Autoscaling max | 
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Production  | Premium v3 P1V3   | Yes | North europe and West Europe | Linux | 1 | 1 | 3 |
+| Content Cell  | Content Cell  |
