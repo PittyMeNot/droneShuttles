@@ -1,4 +1,10 @@
-Application can be accessed here: https://droneshuttles.azurefd.net
+READ BEFORE READING DOCUMENTATION
+
+This application can be accessed here: https://droneshuttles.azurefd.net - It's hosted in my private azure environment.
+template.json has every needed service which needs to be deployed. I've configured it to have public access everywhere just for code review (In reality, this will be configured to use private endpoints)
+Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services
+
+
 
 
 # DroneShuttlesApp documentation
@@ -162,11 +168,7 @@ Health probes will be configured to monitor app services every 30 seconds to avo
 
 Container Registry will be used to provide CI/CD from Azure DevOps to App Services. Containers will be stored in the private repository ( Prod and dev ).
 
-### 3.8.1 Network security groups
-
-NSG will be applied to 2 vNets (North europe and West Europe) to accept internal traffic (Standard Azure rules) and HTTPS from Application Gateway.
-
-### 3.9.1 Virtual Networks
+### 3.8.1 Virtual Networks
 
 There will be two Virtual Networks. One will be hosted in North europe, and the Second one in West Europe. Both of them will have 5 subnets and integrated with specific Azure Resources.
 
@@ -175,7 +177,7 @@ There will be two Virtual Networks. One will be hosted in North europe, and the 
 | Production | 10.0.0.0/24 | 10.0.0.0 - 10.0.0.255 | 256 | 5 | Yes, to vNet 2 |
 | Production | 172.16.0.0/24 | 172.16.0.0 - 172.16.0.255 | 256 | 5 | Yes, to vNet 1 |
 
-### 3.9.2 Subnets
+### 3.8.2 Subnets
 
 | Name | Address Space | Address Range | Address count | Delegated to |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -190,21 +192,21 @@ There will be two Virtual Networks. One will be hosted in North europe, and the 
 | sbn204 | 172.16.0.96/27 | 172.16.0.96 - 172.16.0.127 | 27 + 5 Azure Reserved addresses | N/A |
 | sbn205 | 172.16.0.128/27 | 172.16.0.128 - 172.16.0.159 | 27 + 5 Azure Reserved addresses | N/A |
 
-### 3.10.1 Azure DevOps
+### 3.9.1 Azure DevOps
 
 CI/CD will be provided by Azure DevOps. DevOps teams will use private repositories along with Azure premium Container registry to push new images to the Service Apps. 
 
 ![image](https://github.com/PittyMeNot/droneShuttles/assets/80931908/dd4802aa-d18e-4290-b317-53f63437621e)
 
-### 3.10.2 Deployment Process
+### 3.9.2 Deployment Process
 
 Push new image from Azure Devops to Container registry --> App Services download latest image
 
-### 3.11.1 Application Insights
+### 3.10.1 Application Insights
 
 Application Insights will be used to monitora all App Services depedencies.
 
-### 3.12.1 Log workspace analytics
+### 3.11.1 Log workspace analytics
 
 LWA will store all logs from App Services.
 
