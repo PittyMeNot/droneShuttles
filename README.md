@@ -1,3 +1,6 @@
+Application can be accessed here: https://droneshuttles.azurefd.net
+
+
 # DroneShuttlesApp documentation
 
 Below is whole documentation for Multi Tier application.
