@@ -15,7 +15,8 @@ DroneShuttlesApp is public web appliation used by company to expand their market
 
 
 
-![image](https://github.com/PittyMeNot/droneShuttles/assets/80931908/be68590e-eba8-408a-9a93-2406dc61de5f)
+![image](https://github.com/PittyMeNot/droneShuttles/assets/80931908/f982e8ee-5998-4d74-ba72-4bf9f2e36158)
+
 
 
 DroneShuttlesApp will be hosted as cloud native web application, leveraging managed Azure Services:
