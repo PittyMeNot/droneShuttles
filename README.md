@@ -169,3 +169,4 @@ There will be two Virtual Networks. One will be hosted in North europe, and the 
 | Environment | Address Space | Address Range | Address count | Subnets | Peerings |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | Production | 10.0.0.0/24 | 10.0.0.0 - 10.0.0.255 | 256 | 5 | Yes, to vNet 2 |
+| Production | 172.16.0.0/24 | 172.16.0.0 - 172.16.0.255 | 256 | 5 | Yes, to vNet 1 |
