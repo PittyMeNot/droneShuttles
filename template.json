@@ -1,0 +1,855 @@
+{
+    "$schema":"http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion":"1.0.0.0",
+    "parameters":{
+       "adminSqlUsername":{
+          "type":"string"
+       },
+       "adminSqlPassword":{
+          "type":"securestring"
+       }
+    },
+    "variables":{
+       "virtualNetworkLocation1":"northeurope",
+       "virtualNetworkLocation2":"westeurope",
+       "virtualNetworkName1":"vnet001",
+       "virtualNetworkName2":"vnet002",
+       "appServicePlanName1":"asp-prod001",
+       "appServicePlanName2":"asp-prod002",
+       "workspaceName1":"droneShuttlesProd001",
+       "workspaceName2":"droneShuttlesProd002",
+       "appInsightsName1":"droneShuttlesApp001",
+       "appInsightsName2":"droneShuttlesApp002",
+       "appServiceName1":"droneShuttlesApp001",
+       "appServiceName2":"droneShuttlesApp002",
+       "containerRegistryName":"droneShuttllesCR",
+       "mysqlServerName1":"droneshuttles-db-001",
+       "mysqlServerName2":"droneshuttles-db-002",
+       "mysqlServerName3":"droneshuttles-db-003",
+       "storageAccountName1":"droneshuttlesstag001",
+       "storageAccountName2":"droneshuttlesstag002",
+       "functionAppName":"droneshuttlesfunction",
+       "publicIpName": "droneshuttles-pip",
+       "backendPoolName": "droneShuttlesApp",
+       "httpListenerName": "http",
+       "routingRuleName": "http-standard",
+       "applicationGatewayName": "fw-frontend-apg",
+       "frontDoorName": "droneshuttlesfrontdoor",
+       "frontendDomainName": "droneshuttlesapp.azurefd.net",
+       "backendPoolNameFD": "ApplicationGatewayWAFv2",
+       "routingRuleNameFD": "default"
+    },
+    "resources":[
+       {
+          "name":"[variables('virtualNetworkName1')]",
+          "type":"Microsoft.Network/VirtualNetworks",
+          "apiVersion":"2021-05-01",
+          "location":"[variables('virtualNetworkLocation1')]",
+          "dependsOn":[
+             
+          ],
+          "tags":{
+             
+          },
+          "properties":{
+             "addressSpace":{
+                "addressPrefixes":[
+                   "10.0.0.0/24"
+                ]
+             },
+             "subnets":[
+                {
+                   "name":"sbn101",
+                   "properties":{
+                      "addressPrefix":"10.0.0.0/27"
+                   },
+                   "name":"sbn102",
+                   "properties":{
+                      "addressPrefix":"10.0.0.32/27"
+                   },
+                   "name":"sbn103",
+                   "properties":{
+                      "addressPrefix":"10.0.0.64/27"
+                   },
+                   "name":"sbn104",
+                   "properties":{
+                      "addressPrefix":"10.0.0.96/27"
+                   },
+                   "name":"sbn105",
+                   "properties":{
+                      "addressPrefix":"10.0.0.128/27"
+                   }
+                }
+             ]
+          }
+       },
+       {
+          "name":"[variables('virtualNetworkName2')]",
+          "type":"Microsoft.Network/VirtualNetworks",
+          "apiVersion":"2021-05-01",
+          "location":"West europe",
+          "dependsOn":[
+             
+          ],
+          "tags":{
+             
+          },
+          "properties":{
+             "addressSpace":{
+                "addressPrefixes":[
+                   "172.16.0.0/24"
+                ]
+             },
+             "subnets":[
+                {
+                   "name":"sbn201",
+                   "properties":{
+                      "addressPrefix":"172.16.0.0/27"
+                   },
+                   "name":"sbn202",
+                   "properties":{
+                      "addressPrefix":"172.16.0.32/27"
+                   },
+                   "name":"sbn203",
+                   "properties":{
+                      "addressPrefix":"172.16.0.64/27"
+                   },
+                   "name":"sbn204",
+                   "properties":{
+                      "addressPrefix":"172.16.0.96/27"
+                   },
+                   "name":"sbn205",
+                   "properties":{
+                      "addressPrefix":"172.16.0.128/27"
+                   }
+                }
+             ]
+          }
+       },
+       {
+          "type":"Microsoft.Web/serverfarms",
+          "apiVersion":"2020-06-01",
+          "name":"[variables('appServicePlanName1')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"P1v3",
+             "tier":"PremiumV3",
+             "size":"P1v3",
+             "family":"Pv3",
+             "capacity":1
+          },
+          "properties":{
+             "name":"[variables('appServicePlanName1')]"
+          },
+          "resources":[
+             {
+                "type":"autoscaleSettings",
+                "apiVersion":"2015-04-01",
+                "name":"autoscale",
+                "dependsOn":[
+                   "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]"
+                ],
+                "properties":{
+                   "profiles":[
+                      {
+                         "name":"Default",
+                         "capacity":{
+                            "minimum":"1",
+                            "maximum":"3",
+                            "default":"1"
+                         },
+                         "rules":[
+                            {
+                               "metricTrigger":{
+                                  "metricName":"CpuPercentage",
+                                  "metricResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]",
+                                  "timeGrain":"PT1M",
+                                  "statistic":"Average",
+                                  "timeWindow":"PT5M",
+                                  "timeAggregation":"Average",
+                                  "operator":"GreaterThanOrEqual",
+                                  "threshold":75
+                               },
+                               "scaleAction":{
+                                  "direction":"Increase",
+                                  "type":"ChangeCount",
+                                  "value":"1",
+                                  "cooldown":"PT10M"
+                               }
+                            },
+                            {
+                               "metricTrigger":{
+                                  "metricName":"CpuPercentage",
+                                  "metricResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]",
+                                  "timeGrain":"PT1M",
+                                  "statistic":"Average",
+                                  "timeWindow":"PT10M",
+                                  "timeAggregation":"Average",
+                                  "operator":"LessThanOrEqual",
+                                  "threshold":30
+                               },
+                               "scaleAction":{
+                                  "direction":"Decrease",
+                                  "type":"ChangeCount",
+                                  "value":"1",
+                                  "cooldown":"PT10M"
+                               }
+                            }
+                         ]
+                      }
+                   ],
+                   "enabled":true,
+                   "name":"autoscale",
+                   "targetResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]"
+                }
+             }
+          ]
+       },
+       {
+          "type":"Microsoft.Web/serverfarms",
+          "apiVersion":"2020-06-01",
+          "name":"[variables('appServicePlanName2')]",
+          "location":"West Europe",
+          "sku":{
+             "name":"P1v3",
+             "tier":"PremiumV3",
+             "size":"P1v3",
+             "family":"Pv3",
+             "capacity":1
+          },
+          "properties":{
+             "name":"[variables('appServicePlanName2')]"
+          },
+          "resources":[
+             {
+                "type":"autoscaleSettings",
+                "apiVersion":"2015-04-01",
+                "name":"autoscale",
+                "dependsOn":[
+                   "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]"
+                ],
+                "properties":{
+                   "profiles":[
+                      {
+                         "name":"Default",
+                         "capacity":{
+                            "minimum":"1",
+                            "maximum":"3",
+                            "default":"1"
+                         },
+                         "rules":[
+                            {
+                               "metricTrigger":{
+                                  "metricName":"CpuPercentage",
+                                  "metricResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]",
+                                  "timeGrain":"PT1M",
+                                  "statistic":"Average",
+                                  "timeWindow":"PT5M",
+                                  "timeAggregation":"Average",
+                                  "operator":"GreaterThanOrEqual",
+                                  "threshold":75
+                               },
+                               "scaleAction":{
+                                  "direction":"Increase",
+                                  "type":"ChangeCount",
+                                  "value":"1",
+                                  "cooldown":"PT10M"
+                               }
+                            },
+                            {
+                               "metricTrigger":{
+                                  "metricName":"CpuPercentage",
+                                  "metricResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]",
+                                  "timeGrain":"PT1M",
+                                  "statistic":"Average",
+                                  "timeWindow":"PT10M",
+                                  "timeAggregation":"Average",
+                                  "operator":"LessThanOrEqual",
+                                  "threshold":30
+                               },
+                               "scaleAction":{
+                                  "direction":"Decrease",
+                                  "type":"ChangeCount",
+                                  "value":"1",
+                                  "cooldown":"PT10M"
+                               }
+                            }
+                         ]
+                      }
+                   ],
+                   "enabled":true,
+                   "name":"autoscale",
+                   "targetResourceUri":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]"
+                }
+             }
+          ]
+       },
+       {
+          "type":"Microsoft.OperationalInsights/workspaces",
+          "apiVersion":"2020-08-01",
+          "name":"[variables('workspaceName1')]",
+          "location":"North Europe",
+          "properties":{
+             "sku":{
+                "name":"PerGB2018"
+             }
+          }
+       },
+       {
+          "type":"Microsoft.OperationalInsights/workspaces",
+          "apiVersion":"2020-08-01",
+          "name":"[variables('workspaceName2')]",
+          "location":"West Europe",
+          "properties":{
+             "sku":{
+                "name":"PerGB2018"
+             }
+          }
+       },
+       {
+          "type":"Microsoft.Insights/components",
+          "apiVersion":"2020-02-02-preview",
+          "name":"[variables('appInsightsName1')]",
+          "location":"North Europe",
+          "kind":"web",
+          "properties":{
+             "Application_Type":"web",
+             "WorkspaceResourceId":"[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName1'))]"
+          }
+       },
+       {
+          "type":"Microsoft.Insights/components",
+          "apiVersion":"2020-02-02-preview",
+          "name":"[variables('appInsightsName2')]",
+          "location":"West Europe",
+          "kind":"web",
+          "properties":{
+             "Application_Type":"web",
+             "WorkspaceResourceId":"[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName2'))]"
+          }
+       },
+       {
+          "type":"Microsoft.Web/sites",
+          "apiVersion":"2021-01-15",
+          "name":"[variables('appServiceName1')]",
+          "location":"North Europe",
+          "kind":"app",
+          "properties":{
+             "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]",
+             "siteConfig":{
+                "appSettings":[
+                   {
+                      "name":"APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value":"[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName1')), '2020-02-02-preview').InstrumentationKey]"
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_URL",
+                      "value":"https://index.docker.io"
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+                      "value":""
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+                      "value":""
+                   },
+                   {
+                      "name":"WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                      "value":"false"
+                   }
+                ],
+                "linuxFxVersion":"DOCKER|bitnami/ghost:latest"
+             },
+             "httpsOnly":true
+          }
+       },
+       {
+          "type":"Microsoft.Web/sites",
+          "apiVersion":"2021-01-15",
+          "name":"[variables('appServiceName2')]",
+          "location":"West Europe",
+          "kind":"app",
+          "properties":{
+             "serverFarmId":"[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]",
+             "siteConfig":{
+                "appSettings":[
+                   {
+                      "name":"APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value":"[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName2')), '2020-02-02-preview').InstrumentationKey]"
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_URL",
+                      "value":"https://index.docker.io"
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_USERNAME",
+                      "value":""
+                   },
+                   {
+                      "name":"DOCKER_REGISTRY_SERVER_PASSWORD",
+                      "value":""
+                   },
+                   {
+                      "name":"WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                      "value":"false"
+                   }
+                ],
+                "linuxFxVersion":"DOCKER|bitnami/ghost:latest"
+             },
+             "httpsOnly":true
+          }
+       },
+       {
+          "type":"Microsoft.ContainerRegistry/registries",
+          "apiVersion":"2020-11-01-preview",
+          "name":"[variables('containerRegistryName')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Premium"
+          },
+          "properties":{
+             "adminUserEnabled":false,
+             "publicNetworkAccess":"Enabled",
+             "zoneRedundancy":"Enabled"
+          }
+       },
+       {
+          "apiVersion":"2021-05-01",
+          "type":"Microsoft.DBforMySQL/flexibleServers",
+          "name":"[variables('mysqlServerName1')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Standard_D2ds_v4",
+             "tier":"GeneralPurpose",
+             "family":"Standard"
+          },
+          "properties":{
+             "version":"8.0",
+             "administratorLogin":"[parameters('adminSqlUsername')]",
+             "administratorLoginPassword":"[parameters('adminSqlPassword')]",
+             "availabilityZone":"1",
+             "storageProfile":{
+                "storageMB":5120,
+                "backupRetentionDays":7,
+                "geoRedundantBackup":"Enabled"
+             },
+             "publicNetworkAccess":"Enabled",
+             "delegatedSubnetArguments":{
+                "subnetArmResourceId":""
+             }
+          }
+       },
+       {
+          "apiVersion":"2021-05-01",
+          "type":"Microsoft.DBforMySQL/flexibleServers",
+          "name":"[variables('mysqlServerName2')]",
+          "location":"West Europe",
+          "sku":{
+             "name":"Standard_D2ds_v4",
+             "tier":"GeneralPurpose",
+             "family":"Standard"
+          },
+          "properties":{
+             "version":"8.0",
+             "administratorLogin":"[parameters('adminSqlUsername')]",
+             "administratorLoginPassword":"[parameters('adminSqlPassword')]",
+             "availabilityZone":"3",
+             "storageProfile":{
+                "storageMB":5120,
+                "backupRetentionDays":7,
+                "geoRedundantBackup":"Enabled"
+             },
+             "publicNetworkAccess":"Enabled",
+             "delegatedSubnetArguments":{
+                "subnetArmResourceId":""
+             },
+             "replicationRole":"Replica",
+             "replication":{
+                "sourceServerName":"[variables('mysqlServerName1')]"
+             }
+          }
+       },
+       {
+          "apiVersion":"2021-05-01",
+          "type":"Microsoft.DBforMySQL/flexibleServers",
+          "name":"[variables('mysqlServerName3')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Standard_B1s",
+             "tier":"Basic",
+             "family":"Standard"
+          },
+          "properties":{
+             "version":"8.0",
+             "administratorLogin":"[parameters('adminUsername')]",
+             "administratorLoginPassword":"[parameters('adminPassword')]",
+             "availabilityZone":"1",
+             "storageProfile":{
+                "storageMB":5120,
+                "backupRetentionDays":7,
+                "geoRedundantBackup":"Disabled"
+             },
+             "publicNetworkAccess":"Enabled",
+             "delegatedSubnetArguments":{
+                "subnetArmResourceId":""
+             }
+          }
+       },
+       {
+          "type":"Microsoft.Storage/storageAccounts",
+          "apiVersion":"2021-04-01",
+          "name":"[variables('storageAccountName1')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Standard_LRS"
+          },
+          "kind":"StorageV2",
+          "properties":{
+             "supportsHttpsTrafficOnly":true
+          }
+       },
+       {
+          "type":"Microsoft.Web/sites",
+          "apiVersion":"2021-01-15",
+          "name":"[variables('functionAppName')]",
+          "location":"North Europe",
+          "kind":"functionapp",
+          "properties":{
+             "siteConfig":{
+                "appSettings":[
+                   {
+                      "name":"FUNCTIONS_WORKER_RUNTIME",
+                      "value":"python"
+                   },
+                   {
+                      "name":"FUNCTIONS_EXTENSION_VERSION",
+                      "value":"~3"
+                   },
+                   {
+                      "name":"AzureWebJobsStorage",
+                      "value":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName1'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName1')), '2021-04-01').keys[0].value)]"
+                   }
+                ]
+             },
+             "reserved":true,
+             "isXenon":false,
+             "hyperV":false,
+             "serverFarmId":"[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', variables('functionAppName'), '_asp')]"
+          },
+          "dependsOn":[
+             "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName1'))]"
+          ]
+       },
+       {
+          "type":"Microsoft.Web/serverfarms",
+          "apiVersion":"2021-01-15",
+          "name":"[concat(variables('functionAppName'), '_asp')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Y1",
+             "tier":"Dynamic"
+          },
+          "kind":"functionapp",
+          "properties":{
+             "name":"[concat(variables('functionAppName'), '_asp')]",
+             "workerSize":0,
+             "workerSizeId":0,
+             "numberOfWorkers":1,
+             "hostingEnvironmentProfile":null,
+             "reserved":true
+          }
+       },
+       {
+          "type":"Microsoft.KeyVault/vaults",
+          "apiVersion":"2019-09-01",
+          "name":"KV001-Prod",
+          "location":"North Europe",
+          "properties":{
+             "sku":{
+                "family":"A",
+                "name":"standard"
+             },
+             "tenantId":"[subscription().tenantId]",
+             "accessPolicies":[
+                
+             ],
+             "vaultUri":"[concat('https://', 'KV001-Prod', '.vault.azure.net')]",
+             "enabledForDeployment":false,
+             "enabledForDiskEncryption":false,
+             "enabledForTemplateDeployment":false,
+             "enableSoftDelete":true,
+             "softDeleteRetentionInDays":90,
+             "networkAcls":{
+                "defaultAction":"Allow",
+                "bypass":"AzureServices",
+                "virtualNetworkRules":[
+                   
+                ],
+                "ipRules":[
+                   
+                ]
+             }
+          }
+       },
+       {
+          "type":"Microsoft.Storage/storageAccounts",
+          "apiVersion":"2019-06-01",
+          "name":"[variables('storageAccountName2')]",
+          "location":"West Europe",
+          "sku":{
+             "name":"Standard_RAGRS",
+             "tier":"Standard"
+          },
+          "kind":"StorageV2",
+          "properties":{
+             "accessTier":"Hot",
+             "supportsHttpsTrafficOnly":true,
+             "networkAcls":{
+                "bypass":"AzureServices",
+                "virtualNetworkRules":[
+                   
+                ],
+                "ipRules":[
+                   
+                ],
+                "defaultAction":"Allow"
+             },
+             "encryption":{
+                "services":{
+                   "file":{
+                      "enabled":true
+                   },
+                   "blob":{
+                      "enabled":true
+                   }
+                },
+                "keySource":"Microsoft.Storage"
+             }
+          }
+       },
+       {
+          "type":"Microsoft.Storage/storageAccounts/fileServices/shares",
+          "apiVersion":"2019-06-01",
+          "name":"[concat(variables('storageAccountName2'), '/default/ghostapp')]",
+          "dependsOn":[
+             "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName2'))]"
+          ],
+          "sku":{
+             "name":"Standard_LRS",
+             "tier":"Standard"
+          },
+          "properties":{
+             "enabledProtocols":"SMB"
+          }
+       },
+       {
+          "type":"Microsoft.Network/publicIPAddresses",
+          "apiVersion":"2020-11-01",
+          "name":"[variables('publicIpName')]",
+          "location":"North Europe",
+          "sku":{
+             "name":"Standard"
+          },
+          "properties":{
+             "publicIPAllocationMethod":"Static"
+          }
+       },
+       {
+          "type":"Microsoft.Network/applicationGateways",
+          "apiVersion":"2020-11-01",
+          "name":"[variables('applicationGatewayName')]",
+          "location":"North Europe",
+          "dependsOn":[
+             "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+          ],
+          "sku":{
+             "name":"WAF_v2",
+             "tier":"WAF_v2"
+          },
+          "properties":{
+             "zones":[
+                "2"
+             ],
+             "autoscaleConfiguration":{
+                "minCapacity":1,
+                "maxCapacity":3
+             },
+             "gatewayIPConfigurations":[
+                {
+                   "name":"appGatewayIpConfig",
+                   "properties":{
+                      "subnet":{
+                         "id":"[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
+                      }
+                   }
+                }
+             ],
+             "frontendIPConfigurations":[
+                {
+                   "name":"frontendPublicIP",
+                   "properties":{
+                      "publicIPAddress":{
+                         "id":"[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+                      }
+                   }
+                }
+             ],
+             "frontendPorts":[
+                {
+                   "name":"frontendPort",
+                   "properties":{
+                      "port":80
+                   }
+                }
+             ],
+             "backendAddressPools":[
+                {
+                   "name":"[variables('backendPoolName')]"
+                }
+             ],
+             "backendHttpSettingsCollection":[
+                {
+                   "name":"backendHttpSettings",
+                   "properties":{
+                      "port":80,
+                      "protocol":"Http",
+                      "cookieBasedAffinity":"Disabled",
+                      "pickHostNameFromBackendAddress":false,
+                      "requestTimeout":30
+                   }
+                }
+             ],
+             "httpListeners":[
+                {
+                   "name":"[variables('httpListenerName')]",
+                   "properties":{
+                      "frontendIPConfiguration":{
+                         "id":"[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('applicationGatewayName'), 'frontendPublicIP')]"
+                      },
+                      "frontendPort":{
+                         "id":"[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('applicationGatewayName'), 'frontendPort')]"
+                      },
+                      "protocol":"Http"
+                   }
+                }
+             ],
+             "requestRoutingRules":[
+                {
+                   "name":"[variables('routingRuleName')]",
+                   "properties":{
+                      "ruleType":"Basic",
+                      "httpListener":{
+                         "id":"[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGatewayName'), variables('httpListenerName'))]"
+                      },
+                      "backendAddressPool":{
+                         "id":"[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGatewayName'), variables('backendPoolName'))]"
+                      },
+                      "backendHttpSettings":{
+                         "id":"[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGatewayName'), 'backendHttpSettings')]"
+                      }
+                   }
+                }
+             ],
+             "webApplicationFirewallConfiguration":{
+                "enabled":true,
+                "firewallMode":"Detection",
+                "ruleSetType":"OWASP",
+                "ruleSetVersion":"3.1"
+             }
+          }
+       },
+       {
+        "type": "Microsoft.Network/frontDoors",
+        "apiVersion": "2021-03-01",
+        "name": "[variables('frontDoorName')]",
+        "location": "global",
+        "properties": {
+          "routingRules": [
+            {
+              "name": "[variables('routingRuleNameFD')]",
+              "properties": {
+                "frontendEndpoints": [
+                  {
+                    "id": "[resourceId('Microsoft.Network/frontDoors/frontendEndpoints', variables('frontDoorName'), variables('frontendDomainName'))]"
+                  }
+                ],
+                "acceptedProtocols": [
+                  "Http",
+                  "Https"
+                ],
+                "patternsToMatch": [
+                  "/*"
+                ],
+                "routeConfiguration": {
+                  "@odata.type": "#Microsoft.Azure.FrontDoor.Models.FrontdoorForwardingConfiguration",
+                  "backendPool": {
+                    "id": "[resourceId('Microsoft.Network/frontDoors/backendPools', variables('frontDoorName'), variables('backendPoolName'))]"
+                  }
+                },
+                "enabledState": "Enabled"
+              }
+            }
+          ],
+          "frontendEndpoints": [
+            {
+              "name": "[variables('frontendDomainName')]",
+              "properties": {
+                "hostName": "[variables('frontendDomainName')]",
+                "sessionAffinityEnabledState": "Disabled",
+                "webApplicationFirewallPolicyLink": {
+                  "id": ""
+                }
+              }
+            }
+          ],
+          "backendPools": [
+            {
+              "name": "[variables('backendPoolName')]",
+              "properties": {
+                "backends": [
+                  {
+                    "address": "fw-frontend-apg",
+                    "httpPort": 80,
+                    "priority": 1,
+                    "weight": 50,
+                    "backendHostHeader": "fw-frontend-apg",
+                    "enabledState": "Enabled"
+                  }
+                ],
+                "loadBalancingSettings": {
+                  "id": "[resourceId('Microsoft.Network/frontDoors/loadBalancingSettings', variables('frontDoorName'), 'loadBalancingSettings')]"
+                },
+                "healthProbeSettings": {
+                  "id": "[resourceId('Microsoft.Network/frontDoors/healthProbeSettings', variables('frontDoorName'), 'healthProbeSettings')]"
+                }
+              }
+            }
+          ],
+          "healthProbeSettings": [
+            {
+              "name": "healthProbeSettings",
+              "properties": {
+                "path": "/",
+                "protocol": "Http",
+                "intervalInSeconds": 30,
+                "enabledState": "Enabled"
+              }
+            }
+          ],
+          "loadBalancingSettings": [
+            {
+              "name": "loadBalancingSettings",
+              "properties": {
+                "sampleSize": 4,
+                "successfulSamplesRequired": 2,
+                "additionalLatencyMilliseconds": 0,
+                "enabledState": "Enabled"
+              }
+            }
+          ],
+          "enabledState": "Enabled"
+        }
+      }
+    ]
+ }
