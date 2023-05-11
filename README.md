@@ -83,20 +83,66 @@ Database can be restored using Azure Backup.
 
 Azure function will be used to maintain script for deleting all blog posts at once.
 
+Example script:
+
+```python
+import os
+import json
+import logging
+import requests
+
+import azure.functions as func
+
+### Please provide needed URL and KEY below ###
+
+GHOST_API_URL = os.environ['GHOST_API_URL']
+GHOST_API_KEY = os.environ['GHOST_API_KEY']
+
+def delete_all_posts():
+    headers = {
+        'Authorization': f'Ghost {GHOST_API_KEY}'
+    }
+
+    posts_url = f'{GHOST_API_URL}/admin/posts/'
+    response = requests.get(posts_url, headers=headers)
+    response.raise_for_status()
+
+    posts = response.json().get('posts', [])
+
+    for post in posts:
+        post_id = post['id']
+        delete_url = f'{GHOST_API_URL}/admin/posts/{post_id}/'
+        delete_response = requests.delete(delete_url, headers=headers)
+        delete_response.raise_for_status()
+        logging.info(f'Deleted post with ID {post_id}')
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        delete_all_posts()
+        return func.HttpResponse("All posts have been deleted", status_code=200)
+    except Exception as e:
+        logging.error(f'Error while deleting posts: {e}')
+        return func.HttpResponse("Failed to delete all posts", status_code=500)
 ```
-function test() {
-  console.log("notice the blank line before this function?");
-}
-```
+
+### 3.4.1 Storage Account
+
+| Environment | Region | Performance | Redudancy | Access tier | Soft deletion retention | Encryption support |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Production | North Europe and West Europe | Standard | RA-GRS | Hot | 7 | Blobs and files only |
+
+Application will store its static content in Storage accounts.
+
+### 3.5.1 Azure Front door
+
+Azure front door will provide CDN, and lower latency for DroneShuttlesApp. Moreover, web application Firewall will be attached to it in order to prevent obvious attacks.
+As a backend, application gateway will be hosted to accept HTTPS protocol and forward HTTP protocol to HTTPS. SKU will be standard
 
 
+![image](https://github.com/PittyMeNot/droneShuttles/assets/80931908/cea570bd-f535-4e99-baa3-cea127e564fa)
 
+### 3.6.1 Application Gateway
 
-
-
-
-
-
-
-
-
+| Environment  | Pricing Plan | App Insights | Region | FrontEnd IP | Autoscaling min. | Autoscaling default | Autoscaling max | 
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Production  | WAF V2   | Yes | North europe | Public IP | 1 | 1 | 3 |
