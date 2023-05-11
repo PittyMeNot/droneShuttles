@@ -2,482 +2,768 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "appName": {
+    "applicationName": {
       "type": "string",
-      "defaultValue": "<your_app_name>",
       "metadata": {
-        "description": "Name of the Web App."
+        "description": "The name of the application"
       }
     },
-    "location1": {
+    "adminUsername": {
       "type": "string",
-      "defaultValue": "East US",
       "metadata": {
-        "description": "Location of the first set of resources."
+        "description": "Admin username for App Services and MySQL instances"
       }
     },
-    "location2": {
-      "type": "string",
-      "defaultValue": "West US",
-      "metadata": {
-        "description": "Location of the second set of resources."
-      }
-    },
-    "mysqlServerUsername": {
-      "type": "string",
-      "defaultValue": "<mysql_server_username>",
-      "metadata": {
-        "description": "Username for the MySQL servers."
-      }
-    },
-    "mysqlServerPassword": {
+    "adminPassword": {
       "type": "securestring",
-      "defaultValue": "<mysql_server_password>",
       "metadata": {
-        "description": "Password for the MySQL servers."
+        "description": "Admin password for App Services and MySQL instances"
       }
     }
   },
   "variables": {
-    "appServicePlanName1": "[concat(parameters('appName'), 'ASP1')]",
-    "appServicePlanName2": "[concat(parameters('appName'), 'ASP2')]",
-    "webAppName1": "[concat(parameters('appName'), 'App1')]",
-    "webAppName2": "[concat(parameters('appName'), 'App2')]",
-    "mysqlServerName1": "[concat(parameters('appName'), 'MySQL1')]",
-    "mysqlServerName2": "[concat(parameters('appName'), 'MySQL2')]",
-    "appInsightsName1": "[concat(parameters('appName'), 'AppInsights1')]",
-    "appInsightsName2": "[concat(parameters('appName'), 'AppInsights2')]",
-    "applicationGatewayName": "[concat(parameters('appName'), 'AppGateway')]",
-    "frontDoorName": "[concat(parameters('appName'), 'FrontDoor')]",
-    "vNetName": "[concat(parameters('appName'), 'VNet')]",
-    "subnet1Name": "Subnet1",
-    "subnet2Name": "Subnet2",
-    "subnet3Name": "Subnet3",
-    "subnet4Name": "Subnet4",
-    "subnet5Name": "Subnet5",
-    "publicIPName": "[concat(parameters('appName'), 'PublicIP')]",
-    "keyVaultName": "[concat(parameters('appName'), 'KeyVault')]",
-    "privateDNSZoneName": "[concat('privatelink.', parameters('location1'), '.azurewebsites.net')]"
+    "appService1Name": "[concat(parameters('applicationName'), '-north')]",
+    "appService2Name": "[concat(parameters('applicationName'), '-west')]",
+    "appServicePlan1Name": "[concat(variables('appService1Name'), '-plan')]",
+    "appServicePlan2Name": "[concat(variables('appService2Name'), '-plan')]"
   },
   "resources": [
-    // App Service Plan 1
     {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2018-02-01",
-      "name": "[variables('appServicePlanName1')]",
-      "location": "[parameters('location1')]",
-      "sku": {
-        "name": "S1",
-        "tier": "Standard",
-        "size": "S1",
-        "family": "S",
-        "capacity": 1
-      },
-      "properties": {
-        "perSiteScaling": false,
-        "maximumElasticworkerCount": 1
-                "workerCount": 1
-      }
-    },
-    // App Service Plan 2
-    {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2018-02-01",
-      "name": "[variables('appServicePlanName2')]",
-      "location": "[parameters('location2')]",
-      "sku": {
-        "name": "S1",
-        "tier": "Standard",
-        "size": "S1",
-        "family": "S",
-        "capacity": 1
-      },
-      "properties": {
-        "perSiteScaling": false,
-        "maximumElasticWorkerCount": 1
-      }
-    },
-    // App Service 1
-    {
-      "type": "Microsoft.Web/sites",
       "apiVersion": "2018-11-01",
-      "name": "[variables('webAppName1')]",
-      "location": "[parameters('location1')]",
+      "name": "[variables('appServicePlan1Name')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "North Europe",
+      "sku": {
+        "name": "P1v3",
+        "tier": "PremiumV3",
+        "size": "P1v3",
+        "family": "Pv3",
+        "capacity": 1
+      },
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "apiVersion": "2018-11-01",
+      "name": "[variables('appServicePlan2Name')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "West Europe",
+      "sku": {
+        "name": "P1v3",
+        "tier": "PremiumV3",
+        "size": "P1v3",
+        "family": "Pv3",
+        "capacity": 1
+      },
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "apiVersion": "2018-11-01",
+      "name": "[variables('appService1Name')]",
+      "type": "Microsoft.Web/sites",
+      "location": "North Europe",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName1'))]"
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlan1Name'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName1'))]"
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlan1Name'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "WEBSITE_CONTAINER_NAME",
+              "value": "bitnami/ghost:latest"
+            },
+            {
+              "name": "WEBSITE_CONTAINER_START_TIME_LIMIT",
+              "value": "1800"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "true"
+            }
+          ],
+          "linuxFxVersion": "DOCKER|bitnami/ghost:latest"
+        },
+        "clientAffinityEnabled": false
       },
       "resources": [
         {
           "apiVersion": "2018-11-01",
           "name": "prod",
           "type": "slots",
+          "location": "North Europe",
           "dependsOn": [
-            "[resourceId('Microsoft.Web/sites', variables('webAppName1'))]"
+            "[resourceId('Microsoft.Web/sites', variables('appService1Name'))]"
           ],
-          "properties": {},
-          "location": "[parameters('location1')]"
+          "properties": {}
         },
         {
           "apiVersion": "2018-11-01",
           "name": "dev",
           "type": "slots",
+          "location": "North Europe",
           "dependsOn": [
-            "[resourceId('Microsoft.Web/sites', variables('webAppName1'))]"
+            "[resourceId('Microsoft.Web/sites', variables('appService1Name'))]"
           ],
-          "properties": {},
-          "location": "[parameters('location1')]"
+          "properties": {}
         }
       ]
     },
-    // App Service 2
     {
-      "type": "Microsoft.Web/sites",
       "apiVersion": "2018-11-01",
-      "name": "[variables('webAppName2')]",
-      "location": "[parameters('location2')]",
+      "name": "[variables('appService2Name')]",
+      "type": "Microsoft.Web/sites",
+      "location": "West Europe",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName2'))]"
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlan2Name'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName2'))]"
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlan2Name'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "WEBSITE_CONTAINER_NAME",
+              "value": "bitnami/ghost:latest"
+            },
+            {
+              "name": "WEBSITE_CONTAINER_START_TIME_LIMIT",
+              "value": "1800"
+            },
+            {
+              "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+              "value": "true"
+            }
+          ],
+          "linuxFxVersion": "DOCKER|bitnami/ghost:latest"
+        },
+        "clientAffinityEnabled": false
       },
       "resources": [
         {
           "apiVersion": "2018-11-01",
           "name": "prod",
           "type": "slots",
+          "location": "West Europe",
           "dependsOn": [
-            "[resourceId('Microsoft.Web/sites', variables('webAppName2'))]"
+            "[resourceId('Microsoft.Web/sites', variables('appService2Name'))]"
           ],
-          "properties": {},
-          "location": "[parameters('location2')]"
+          "properties": {}
         },
         {
           "apiVersion": "2018-11-01",
           "name": "dev",
           "type": "slots",
+          "location": "West Europe",
           "dependsOn": [
-            "[resourceId('Microsoft.Web/sites', variables('webAppName2'))]"
+            "[resourceId('Microsoft.Web/sites', variables('appService2Name'))]"
           ],
-          "properties": {},
-          "location": "[parameters('location2')]"
+          "properties": {}
         }
       ]
     },
-    // MySQL Server 1 (Master)
     {
       "type": "Microsoft.DBforMySQL/servers",
       "apiVersion": "2017-12-01",
-      "name": "[variables('mysqlServerName1')]",
-      "location": "[parameters('location1')]",
+      "name": "[variables('mysqlServer1Name')]",
+      "location": "North Europe",
       "sku": {
         "name": "GP_Gen5_2",
         "tier": "GeneralPurpose",
         "capacity": 2,
-        "size": "5120",
         "family": "Gen5"
       },
       "properties": {
-        "administratorLogin": "[parameters('mysqlServerUsername')]",
-        "administratorLoginPassword": "[parameters('mysqlServerPassword')]",
-        "sslEnforcement": "Enabled",
         "version": "5.7",
-        "createMode": "Default"
+        "sslEnforcement": "Disabled",
+        "createMode": "Default",
+        "administratorLogin": "[parameters('adminUsername')]",
+        "administratorLoginPassword": "[parameters('adminPassword')]",
+        "storageProfile": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Enabled",
+          "storageMB": 51200
+        }
       }
     },
-    // MySQL Server 2 (Read-only replica)
     {
       "type": "Microsoft.DBforMySQL/servers",
       "apiVersion": "2017-12-01",
-      "name": "[variables('mysqlServerName2')]",
-      "location": "[parameters('location2')]",
+      "name": "[variables('mysqlServer2Name')]",
+      "location": "West Europe",
       "sku": {
         "name": "GP_Gen5_2",
         "tier": "GeneralPurpose",
         "capacity": 2,
-        "size": "5120",
         "family": "Gen5"
       },
       "properties": {
-        "administratorLogin": "[parameters('mysqlServerUsername')]",
-        "administratorLoginPassword": "[parameters('mysqlServerPassword')]",
-        "sslEnforcement": "Enabled",
         "version": "5.7",
-        "createMode": "Replica",
-        "sourceServerId": "[resourceId('Microsoft.DBforMySQL/servers', variables('mysqlServerName1'))]"
+        "sslEnforcement": "Disabled",
+        "createMode": "GeoRestore",
+        "restorePointInTime": "SourceServerCreateTime",
+        "sourceServerId": "[resourceId('Microsoft.DBforMySQL/servers', variables('mysqlServer1Name'))]",
+        "administratorLogin": "[parameters('adminUsername')]",
+        "administratorLoginPassword": "[parameters('adminPassword')]",
+        "storageProfile": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Enabled",
+          "storageMB": 51200
+        }
       }
     },
-    // Application Insights 1
     {
       "type": "Microsoft.Insights/components",
       "apiVersion": "2018-05-01-preview",
-      "name": "[variables('appInsightsName1')]",
-      "location": "[parameters('location1')]",
+      "name": "[variables('appInsights1Name')]",
+      "location": "North Europe",
       "kind": "web",
       "properties": {
         "Application_Type": "web",
-        "ApplicationId": "[variables('webAppName1')]"
+        "ApplicationId": "[variables('appInsights1Name')]"
       }
     },
-    // Application Insights 2
     {
       "type": "Microsoft.Insights/components",
       "apiVersion": "2018-05-01-preview",
-      "name": "[variables('appInsightsName2')]",
-      "location": "[parameters('location2')]",
+      "name": "[variables('appInsights2Name')]",
+      "location": "West Europe",
       "kind": "web",
       "properties": {
         "Application_Type": "web",
-        "ApplicationId": "[variables('webAppName2')]"
+        "ApplicationId": "[variables('appInsights2Name')]"
       }
     },
-    // Application Gateway
     {
-      "type": "Microsoft.Network/applicationGateways",
-      "apiVersion": "2020-11-01",
-      "name": "[variables('applicationGatewayName')]",
-      "location": "[parameters('location1')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName'))]"
-      ],
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2020-03-01-preview",
+      "name": "[variables('logAnalyticsWorkspace1Name')]",
+      "location": "North Europe",
       "properties": {
         "sku": {
-          "name": "Standard_v2",
-          "tier": "Standard_v2",
-          "capacity": 2
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2020-03-01-preview",
+      "name": "[variables('logAnalyticsWorkspace2Name')]",
+      "location": "West Europe",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-11-01",
+      "name": "[variables('vnet1Name')]",
+      "location": "North Europe",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
         },
-        "gatewayIPConfigurations": [
+        "subnets": [
           {
-            "name": "appGatewayIpConfig",
+            "name": "subnet1",
             "properties": {
-              "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vNetName'), variables('subnet1Name'))]"
-              }
+              "addressPrefix": "10.0.0.0/27"
             }
-          }
-        ],
-        "frontendIPConfigurations": [
+          },
           {
-            "name": "appGatewayFrontendIP",
+            "name": "subnet2",
             "properties": {
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName'))]"
-              }
+              "addressPrefix": "10.0.0.32/27"
             }
-          }
-        ],
-        "frontendPorts": [
+          },
           {
-            "name": "appGatewayFrontendPort",
+            "name": "subnet3",
             "properties": {
-              "port": 80
+              "addressPrefix": "10.0.0.64/27"
             }
-          }
-        ],
-        "backendAddressPools": [
+          },
           {
-            "name": "appGatewayBackendPool",
+            "name": "subnet4",
             "properties": {
-              "backendAddresses": [
-                {
-                  "fqdn": "[concat(variables('webAppName1'), '.azurewebsites.net')]"
-                },
-                {
-                  "fqdn": "[concat(variables('webAppName2'), '.azurewebsites.net')]"
-                }
-              ]
+              "addressPrefix": "10.0.0.96/27"
             }
-          }
-        ],
-        "backendHttpSettingsCollection": [
+          },
           {
-            "name": "appGatewayBackendHttpSettings",
+            "name": "subnet5",
             "properties": {
-              "port": 80,
-              "protocol": "Http",
-              "cookieBasedAffinity": "Disabled",
-              "pickHostNameFromBackendAddress": true,
-              "requestTimeout": 30
-            }
-          }
-        ],
-        "httpListeners": [
-          {
-            "name": "appGatewayHttpListener",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('applicationGatewayName'), 'appGatewayFrontendIP')]"
-              },
-              "frontendPort": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('applicationGatewayName'), 'appGatewayFrontendPort')]"
-              },
-              "protocol": "Http",
-              "sslCertificate": null
-            }
-          }
-        ],
-        "requestRoutingRules": [
-          {
-            "name": "rule1",
-            "properties": {
-              "ruleType": "Basic",
-              "httpListener": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGatewayName'), 'appGatewayHttpListener')]"
-              },
-              "backendAddressPool": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGatewayName'), 'appGatewayBackendPool')]"
-              },
-              "backendHttpSettings": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGatewayName'), 'appGatewayBackendHttpSettings')]"
-              }
+              "addressPrefix": "10.0.0.128/27"
             }
           }
         ]
       }
     },
-    // Front Door
-    {
-      "type": "Microsoft.Network/frontDoors",
-      "apiVersion": "2020-01-01",
-      "name": "[variables('frontDoorName')]",
-      "location": "global",
-      "properties": {
-        "routingRules": [
-          {
-            "name": "route1",
-            "properties": {
-              "frontendEndpoints": [
-                {
-                  "id": "[resourceId('Microsoft.Network/frontDoors/frontendEndpoints', variables('frontDoorName'), 'default')]"
-                }
-              ],
-              "acceptedProtocols": [
-                "Http"
-              ],
-              "patternsToMatch": [
-                "/*"
-              ],
-              "routeConfiguration": {
-                "@odata.type": "#Microsoft.Azure.FrontDoor.Models.FrontdoorForwardingConfiguration",
-                "backendPool": {
-                  "id": "[resourceId('Microsoft.Network/frontDoors/backendPools', variables('frontDoorName'), 'default')]"
-                },
-                "forwardingProtocol": "MatchRequest",
-                "cacheConfiguration": {
-                  "queryParameterStripDirective": "StripNone",
-                  "dynamicCompression": "Enabled"
-                }
-              },
-              "rulesEngine": null,
-              "enabledState": "Enabled"
+        {
+          "type": "Microsoft.ContainerRegistry/registries",
+          "apiVersion": "2019-05-01",
+          "name": "[parameters('containerRegistryName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "sku": {
+            "name": "Premium"
+          },
+          "properties": {
+            "adminUserEnabled": true
+          }
+        },
+        {
+          "type": "Microsoft.Web/serverfarms",
+          "apiVersion": "2020-06-01",
+          "name": "[parameters('appFunctionPlanName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "sku": {
+            "name": "Y1",
+            "tier": "Dynamic"
+          },
+          "properties": {
+            "name": "[parameters('appFunctionPlanName')]",
+            "workerSizeId": 0,
+            "numberOfWorkers": 1
+          }
+        },
+        {
+          "type": "Microsoft.Web/sites",
+          "apiVersion": "2020-06-01",
+          "name": "[parameters('appFunctionName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/serverfarms', parameters('appFunctionPlanName'))]"
+          ],
+          "properties": {
+            "name": "[parameters('appFunctionName')]",
+            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appFunctionPlanName'))]",
+            "siteConfig": {
+              "appSettings": [
+                {}
+              ]
             }
           }
-        ],
-        "healthProbeSettingsCollection": [
-          {
-            "name": "healthProbeSettings1",
-            "properties": {
-              "path": "/",
-              "protocol": "Http",
-              "intervalInSeconds": 30,
-              "healthProbeMethod": "HEAD",
-              "enabledState": "Enabled"
-            }
+        },
+        {
+          "type": "Microsoft.Storage/storageAccounts",
+          "apiVersion": "2021-04-01",
+          "name": "[parameters('storageAccountName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "sku": {
+            "name": "Standard_RAGRS"
+          },
+          "kind": "StorageV2",
+          "properties": {
+            "supportsHttpsTrafficOnly": true
           }
-        ],
-        "loadBalancingSettingsCollection": [
-          {
-            "name": "loadBalancingSettings1",
-            "properties": {
-              "sampleSize": 4,
-              "successfulSamplesRequired": 2,
-              "additionalLatencyMilliseconds": 0
-            }
-          }
-        ],
-        "backendPools": [
-          {
-            "name": "default",
-            "properties": {
-              "backends": [
-                {
-                  "address": "[concat(variables('webAppName1'), '.azurewebsites.net')]",
-                  "httpPort": 80,
-                  "priority": 1,
-                  "weight": 50,
-                  "backendHostHeader": "[concat(variables('webAppName1'), '.azurewebsites.net')]"
-                },
-                {
-                  "address": "[concat(variables('webAppName2'), '.azurewebsites.net')]",
-                  "httpPort": 80,
-                  "priority": 1,
-                  "weight": 50,
-                  "backendHostHeader": "[concat(variables('webAppName2'), '.azurewebsites.net')]"
+        },
+        {
+          "type": "Microsoft.Network/privateEndpoints",
+          "apiVersion": "2020-11-01",
+          "name": "[concat(parameters('webAppName1'), '-private-endpoint')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', parameters('webAppName1'))]"
+          ],
+          "properties": {
+            "subnet": {
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName1'), parameters('privateEndpointSubnetName'))]"
+            },
+            "privateLinkServiceConnections": [
+              {
+                "name": "[concat(parameters('webAppName1'), '-private-link-connection')]",
+                "properties": {
+                  "privateLinkServiceId": "[resourceId('Microsoft.Web/sites', parameters('webAppName1'))]",
+                  "groupIds": [
+                    "sites"
+                  ]
                 }
-              ],
-              "healthProbeSettings": {
-                "id": "[resourceId('Microsoft.Network/frontDoors/healthProbeSettingsCollection', variables('frontDoorName'), 'healthProbeSettings1')]"
-              },
-              "loadBalancingSettings": {
-                "id": "[resourceId('Microsoft.Network/frontDoors/loadBalancingSettingsCollection', variables('frontDoorName'), 'loadBalancingSettings1')]"
               }
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.Network/privateEndpoints",
+          "apiVersion": "2020-11-01",
+          "name": "[concat(parameters('webAppName2'), '-private-endpoint')]",
+          "location": "[parameters('westEuropeLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', parameters('webAppName2'))]"
+          ],
+          "properties": {
+            "subnet": {
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName2'), parameters('privateEndpointSubnetName'))]"
+            },
+            "privateLinkServiceConnections": [
+              {
+                "name": "[concat(parameters('webAppName2'), '-private-link-connection')]",
+                "properties": {
+                  "privateLinkServiceId": "[resourceId('Microsoft.Web/sites', parameters('webAppName2'))]",
+                  "groupIds": [
+                    "sites"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.Web/serverfarms",
+          "apiVersion": "2020-06-01",
+          "name": "[parameters('functionAppPlanName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "sku": {
+            "name": "Y1",
+            "tier": "Dynamic"
+          },
+          "properties": {
+            "name": "[parameters('functionAppPlanName')]",
+            "computeMode": "Dynamic"
+          }
+        },
+        {
+          "type": "Microsoft.Web/sites",
+          "apiVersion": "2020-06-01",
+          "name": "[parameters('functionAppName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppPlanName'))]"
+          ],
+          "properties": {
+            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppPlanName'))]",
+            "siteConfig": {
+              "appSettings": [
+                {
+                  "name": "AzureWebJobsStorage",
+                  "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-04-01').keys[0].value)]"
+                },
+                {
+                  "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                  "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-04-01').keys[0].value)]"
+                },
+                {
+                  "name": "WEBSITE_CONTENTSHARE",
+                  "value": "[toLower(parameters('functionAppName'))]"
+                },
+                {
+                  "name": "FUNCTIONS_EXTENSION_VERSION",
+                  "value": "~3"
+                },
+                {
+                  "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                  "value": "12"
+                },
+                {
+                  "name": "FUNCTIONS_WORKER_RUNTIME",
+                  "value": "node"
+                }
+              ]
             }
           }
-        ],
-        "frontendEndpoints": [
-          {
-            "name": "default",
-            "properties": {
-              "hostName": "[concat(variables('frontDoorName'), '.azurefd.net')]",
-              "sessionAffinityEnabledState": "Disabled",
-              "webApplicationFirewallPolicyLink": null
+        },
+        {
+          "type": "Microsoft.Storage/storageAccounts",
+          "apiVersion": "2021-04-01",
+          "name": "[parameters('storageAccountName')]",
+          "location": "[parameters('westEuropeLocation')]",
+          "sku": {
+            "name": "Standard_RAGRS",
+            "tier": "Standard"
+          },
+          "kind": "StorageV2",
+          "properties": {
+            "supportsHttpsTrafficOnly": true,
+            "networkAcls": {
+              "bypass": "AzureServices",
+              "defaultAction": "Deny",
+              "ipRules": [],
+              "virtualNetworkRules": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vNet1Name')), '/subnets/', parameters('subnetName1'))]",
+                  "action": "Allow"
+                },
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('vNet2Name')), '/subnets/', parameters('subnetName1'))]",
+                  "action": "Allow"
+                }
+              ]
+            },
+            "encryption": {
+              "services": {
+                "file": {
+                  "enabled": true
+                },
+                "blob": {
+                  "enabled": true
+                }
+              },
+              "keySource": "Microsoft.Storage"
             }
           }
-        ],
-        "backendPoolsSettings": {
-          "sendRecvTimeoutSeconds": 30
         },
-        "enabledState": "Enabled"
-      }
-    },
-    // Key Vault
-    {
-      "type": "Microsoft.KeyVault/vaults",
-      "apiVersion": "2019-09-01",
-      "name": "[variables('keyVaultName')]",
-      "location": "[parameters('location1')]",
-      "properties": {
-        "sku": {
-          "name": "standard",
-          "family": "A"
+        {
+          "type": "Microsoft.Network/virtualNetworks",
+          "apiVersion": "2021-02-01",
+          "name": "[parameters('vNetNameWestEurope')]",
+          "location": "[parameters('westEuropeLocation')]",
+          "properties": {
+            "addressSpace": {
+              "addressPrefixes": [
+                "172.16.0.0/16"
+              ]
+            },
+            "subnets": [
+              {
+                "name": "Subnet-1",
+                "properties": {
+                  "addressPrefix": "172.16.0.0/27"
+                }
+              },
+              {
+                "name": "Subnet-2",
+                "properties": {
+                  "addressPrefix": "172.16.0.32/27"
+                }
+              },
+              {
+                "name": "Subnet-3",
+                "properties": {
+                  "addressPrefix": "172.16.0.64/27"
+                }
+              },
+              {
+                "name": "Subnet-4",
+                "properties": {
+                  "addressPrefix": "172.16.0.96/27"
+                }
+              },
+              {
+                "name": "Subnet-5",
+                "properties": {
+                  "addressPrefix": "172.16.0.128/27"
+                }
+              }
+            ]
+          }
         },
-        "tenantId": "[subscription().tenantId]",
-        "accessPolicies": [],
-        "enabledForDeployment": false,
-        "enabledForDiskEncryption": false,
-        "enabledForTemplateDeployment": false
-      }
-    }
-  ],
-  "outputs": {
-    "appService1HostName": {
-      "type": "string",
-      "value": "[concat(variables('webAppName1'), '.azurewebsites.net')]"
-    },
-    "appService2HostName": {
-      "type": "string",
-      "value": "[concat(variables('webAppName2'), '.azurewebsites.net')]"
-    },
-    "frontDoorHostName": {
-      "type": "string",
-      "value": "[concat(variables('frontDoorName'), '.azurefd.net')]"
-    },
-    "keyVaultUri": {
-      "type": "string",
-      "value": "[reference(variables('keyVaultName')).vaultUri]"
-    }
-  }
+        {
+          "type": "Microsoft.Network/networkSecurityGroups",
+          "apiVersion": "2021-02-01",
+          "name": "[parameters('nsgNameNorthEurope')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "properties": {
+            "securityRules": [
+              // Add your necessary security rules here
+              
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.Network/networkSecurityGroups",
+          "apiVersion": "2021-02-01",
+          "name": "[parameters('nsgNameWestEurope')]",
+          "location": "[parameters('westEuropeLocation')]",
+          "properties": {
+            "securityRules": [
+              // Add your necessary security rules here
+            ]
+          }
+        },
+        {
+          "type": "Microsoft.Network/applicationGateways",
+          "apiVersion": "2021-03-01",
+          "name": "[parameters('applicationGatewayName')]",
+          "location": "[parameters('northEuropeLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetNorthEuropeName'))]",
+            "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+          ],
+          "properties": {
+            "sku": {
+              "name": "Standard_v2",
+              "tier": "Standard_v2"
+            },
+            "gatewayIPConfigurations": [
+              {
+                "name": "appGatewayIpConfig",
+                "properties": {
+                  "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetNorthEuropeName'), parameters('gatewaySubnetName'))]"
+                  }
+                }
+              }
+            ],
+            "frontendIPConfigurations": [
+              {
+                "name": "appGatewayFrontendIP",
+                "properties": {
+                  "publicIPAddress": {
+                    "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+                  }
+                }
+              }
+            ],
+            "frontendPorts": [
+              {
+                "name": "appGatewayFrontendPort80",
+                "properties": {
+                  "port": 80
+                }
+              },
+              {
+                "name": "appGatewayFrontendPort443",
+                "properties": {
+                  "port": 443
+                }
+              }
+            ],
+            "backendAddressPools": [
+              // Add backend address pool configurations here
+            ],
+            "backendHttpSettingsCollection": [
+              // Add backend HTTP settings here
+            ],
+            "httpListeners": [
+              // Add HTTP listeners here
+            ],
+            "urlPathMaps": [
+              // Add URL path maps here
+            ],
+            "requestRoutingRules": [
+              // Add request routing rules here
+            ],
+            "webApplicationFirewallConfiguration": {
+              "enabled": true,
+              "firewallMode": "Detection",
+              "ruleSetType": "OWASP",
+              "ruleSetVersion": "3.1"
+            }
+          }
+        },
+        {
+          "type": "Microsoft.Network/frontDoors",
+          "apiVersion": "2020-01-01",
+          "name": "[parameters('frontDoorName')]",
+          "location": "global",
+          "properties": {
+            "routingRules": [
+              {
+                "name": "httpToHttpsRedirect",
+                "properties": {
+                  "frontendEndpoints": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/frontDoors/frontendEndpoints', parameters('frontDoorName'), parameters('frontDoorFrontendEndpointName'))]"
+                    }
+                  ],
+                  "acceptedProtocols": [
+                    "Http"
+                  ],
+                  "patternsToMatch": [
+                    "/*"
+                  ],
+                  "enabledState": "Enabled",
+                  "routeConfiguration": {
+                    "@odata.type": "#Microsoft.Azure.FrontDoor.Models.FrontdoorRedirectConfiguration",
+                    "redirectType": "Found",
+                    "redirectProtocol": "HttpsOnly",
+                    "customPath": "/{urlPath}"
+                  }
+                }
+              },
+              {
+                "name": "appGatewayRouting",
+                "properties": {
+                  "frontendEndpoints": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/frontDoors/frontendEndpoints', parameters('frontDoorName'), parameters('frontDoorFrontendEndpointName'))]"
+                    }
+                  ],
+                  "acceptedProtocols": [
+                    "Https"
+                  ],
+                  "patternsToMatch": [
+                    "/*"
+                  ],
+                  "enabledState": "Enabled",
+                  "routeConfiguration": {
+                    "@odata.type": "#Microsoft.Azure.FrontDoor.Models.FrontdoorForwardingConfiguration",
+                    "backendPool": {
+                      "id": "[resourceId('Microsoft.Network/frontDoors/backendPools', parameters('frontDoorName'), parameters('frontDoorBackendPoolName'))]"
+                    }
+                  }
+                }
+              }
+            ],
+            "frontendEndpoints": [
+              {
+                "name": "[parameters('frontDoorFrontendEndpointName')]",
+                "properties": {
+                  "hostName": "[concat(parameters('frontDoorName'), '.azurefd.net')]",
+                  "sessionAffinityEnabledState": "Disabled",
+                  "webApplicationFirewallPolicyLink": {
+                    "id": "" // Add the link to the WAF policy if needed
+                  }
+                }
+              }
+            ],
+            "backendPools": [
+              {
+                "name": "[parameters('frontDoorBackendPoolName')]",
+                "properties": {
+                  "backends": [
+                    {
+                      "address": "[concat(parameters('applicationGatewayName'), '.', parameters('northEuropeLocation'), '.cloudapp.azure.com')]",
+                      "httpPort": 80,
+                      "httpsPort": 443,
+                      "weight": 50,
+                      "priority": 1,
+                      "backendHostHeader": "[concat(parameters('applicationGatewayName'), '.', parameters('northEuropeLocation'), '.cloudapp.azure.com')]"
+                    }
+                  ],
+                  "loadBalancingSettings": {
+                    "name": "defaultLoadBalancingSettings",
+                    "id": "[resourceId('Microsoft.Network/frontDoors/loadBalancingSettings', parameters('frontDoorName'), 'defaultLoadBalancingSettings')]"
+                  },
+                  "healthProbeSettings": {
+                    "name": "defaultHealthProbeSettings",
+                    "id": "[resourceId('Microsoft.Network/frontDoors/healthProbeSettings', parameters('frontDoorName'), 'defaultHealthProbeSettings')]"
+                  }
+                }
+              }
+            ],
+            "healthProbeSettingsCollection": [
+              {
+                "name": "defaultHealthProbeSettings",
+                "properties": {
+                  "path": "/",
+                  "protocol": "Https",
+                  "intervalInSeconds": 30,
+                  "healthProbeMethod": "HEAD",
+                  "enabledState": "Enabled"
+                }
+              }
+            ],
+            "loadBalancingSettingsCollection": [
+              {
+                "name": "defaultLoadBalancingSettings",
+                "properties": {
+                  "sampleSize": 4,
+                  "successfulSamplesRequired": 2,
+                  "additionalLatencyMilliseconds": 0,
+                  "enabledState": "Enabled"
+                }
+              }
+            ],
+            "backendPoolsSettings": {
+              "enforceCertificateNameCheck": "Enabled",
+              "sendRecvTimeoutSeconds": 30
+            },
+            "enabledState": "Enabled"
+          }
+        }
+  ]
 }
