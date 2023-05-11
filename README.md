@@ -2,7 +2,8 @@ READ BEFORE READING DOCUMENTATION
 
 This application can be accessed here: https://droneshuttles.azurefd.net - It's hosted in my private azure environment.
 template.json has every needed service which needs to be deployed. I've configured it to have public access everywhere just for code review (In reality, this will be configured to use private endpoints)
-Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services
+
+Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services, create MySQL Schema and provide environment variables in App Services
 
 Sometimes, container doesn't want to start itself. I don't know why, errors are generic but usually it will start after reboot. 
 Image used: bitnami/ghost:latest
