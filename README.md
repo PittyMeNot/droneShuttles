@@ -186,11 +186,23 @@ There will be two Virtual Networks. One will be hosted in North europe, and the 
 | sbn204 | 172.16.0.96/27 | 172.16.0.96 - 172.16.0.127 | 27 + 5 Azure Reserved addresses | N/A |
 | sbn205 | 172.16.0.128/27 | 172.16.0.128 - 172.16.0.159 | 27 + 5 Azure Reserved addresses | N/A |
 
+### 3.10.1 Azure DevOps
 
+CI/CD will be provided by Azure DevOps. DevOps teams will use private repositories along with Azure premium Container registry to push new images to the Service Apps. 
 
+![image](https://github.com/PittyMeNot/droneShuttles/assets/80931908/dd4802aa-d18e-4290-b317-53f63437621e)
 
+### 3.10.2 Deployment Process
 
+Push new image from Azure Devops to Container registry --> App Services download latest image
 
+### 3.11.1 Application Insights
+
+Application Insights will be used to monitora all App Services depedencies.
+
+### 3.12.1 Log workspace analytics
+
+LWA will store all logs from App Services.
 
 
 
