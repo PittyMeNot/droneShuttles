@@ -1,13 +1,14 @@
 READ BEFORE READING DOCUMENTATION
 
-template.json has every needed service which needs to be deployed. I've configured it to have public access everywhere just for code review (In reality, this will be configured to use private endpoints)
+template.json has every needed service which needs to be deployed. I've configured it to have public access everywhere just for code review (In reality, this will be configured to use private endpoints).
+I wish I could provide link to working web application, but my free credits expired :/
 
-Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services, create MySQL Schema and provide environment variables in App Services
+Manually steps to do after script deployment: Create Private endpoints, peering, subnet integration for App Services, create MySQL Schema and provide environment variables in App Services (Sorry for no implementing that in JSON template, but I was running out of time)
 
 Sometimes, container doesn't want to start itself. I don't know why, errors are generic but usually it will start after reboot. 
 Image used: bitnami/ghost:latest
 
-I've used bitnami since standard ghost image didn't want to work in my environment.
+I've used bitnami since standard ghost image didn't want to work somehow. It always had some errors (generic). Connection to SQL was established, there wasn't any security rules but still it dindn't want to start itself.
 
 
 # DroneShuttlesApp documentation
