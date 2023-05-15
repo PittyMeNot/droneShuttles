@@ -8,7 +8,7 @@ Manually steps to do after script deployment: Create Private endpoints, peering,
 Sometimes, container doesn't want to start itself. I don't know why, errors are generic but usually it will start after reboot. 
 Image used: bitnami/ghost:latest
 
-I've used bitnami since standard ghost image didn't want to work somehow. It always had some errors (generic). Connection to SQL was established, there wasn't any security rules but still it dindn't want to start itself.
+I've used bitnami since standard ghost image didn't want to work somehow. It always had some errors (generic). Connection to SQL was established, there wasn't any security rules but still it didn't want to start itself.
 
 
 # DroneShuttlesApp documentation
